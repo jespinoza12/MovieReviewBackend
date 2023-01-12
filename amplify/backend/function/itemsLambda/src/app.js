@@ -6,15 +6,23 @@ or in the "license" file accompanying this file. This file is distributed on an 
 See the License for the specific language governing permissions and limitations under the License.
 */
 
-
-
-
 const express = require('express')
 const bodyParser = require('body-parser')
+const mongoose = require('mongoose')
+const cors = require('cors')
+const bcrypt = require('bcrypt');
+const port = 9292;
+
 const awsServerlessExpressMiddleware = require('aws-serverless-express/middleware')
+require('dotenv').config()
+
+mongoose.connect(process.env.MONGO).then(()=>{console.log('DB Connected')})
 
 // declare a new express app
 const app = express()
+app.use(express.json({limit: '100mb', extended: true}))
+app.use(express.urlencoded({limit: '100mb', extended: true}))
+app.use(cors())
 app.use(bodyParser.json())
 app.use(awsServerlessExpressMiddleware.eventContext())
 
@@ -24,6 +32,8 @@ app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Headers", "*")
   next()
 });
+
+
 
 
 /**********************
@@ -82,8 +92,8 @@ app.delete('/items/*', function(req, res) {
   res.json({success: 'delete call succeed!', url: req.url});
 });
 
-app.listen(3000, function() {
-    console.log("App started")
+app.listen(port, function() {
+    console.log(`App started1 ${port}`)
 });
 
 // Export the app object. When executing the application local this does nothing. However,

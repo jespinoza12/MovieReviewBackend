@@ -89,12 +89,12 @@
         "RoleName": {
           "Fn::If": [
             "ShouldNotCreateEnvResources",
-            "moviereviewbackendLambdaRole9c768dd5",
+            "moviereviewbackendLambdaRole5feb4487",
             {
               "Fn::Join": [
                 "",
                 [
-                  "moviereviewbackendLambdaRole9c768dd5",
+                  "moviereviewbackendLambdaRole5feb4487",
                   "-",
                   {
                     "Ref": "env"
