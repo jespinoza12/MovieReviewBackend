@@ -11,7 +11,7 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const port = 9292;
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const saltRounds = 10;
 
 
@@ -56,14 +56,6 @@ app.get('/items/login', function(req, res) {
 
   res.json({success: 'get call succeed!', url: req.url});
 });
-
-function saltNHash(information) {
-  bcrypt.genSalt(saltRounds, function(err, salt) {
-    bcrypt.hash(information, salt, function(err, hash) {
-      return hash;
-    });
-  });
-};
 
 app.post('/items/register', function(req, res) {
   // Add your code here
