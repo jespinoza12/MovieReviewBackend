@@ -16,7 +16,7 @@
       "function": {
         "itemsLambda": {
           "deploymentBucketName": "amplify-moviereviewbackend-dev-213158-deployment",
-          "s3Key": "amplify-builds/itemsLambda-704769434a62566d4b54-build.zip"
+          "s3Key": "amplify-builds/itemsLambda-35484663624c74555635-build.zip"
         }
       },
       "auth": {
