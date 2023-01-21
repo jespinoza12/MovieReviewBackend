@@ -29,7 +29,8 @@ const userSchema = new mongoose.Schema({
   zip_code: String,
   email: String,
   phone: String,
-  password: String
+  password: String,
+  role: String
 });
 
 
@@ -56,6 +57,8 @@ app.get('/items/login', function(req, res) {
 
   res.json({success: 'get call succeed!', url: req.url});
 });
+
+
 
 app.post('/items/register', function(req, res) {
   // Add your code here
@@ -91,7 +94,8 @@ app.post('/items/register', function(req, res) {
                                             zip_code: zhash,
                                             email: emailhash,
                                             phone: phash,
-                                            password: hash
+                                            password: hash,
+                                            role: "user"
                                           });
                                           user.save(err => {
                                             if(err) {
@@ -114,7 +118,6 @@ app.post('/items/register', function(req, res) {
                   });
                 });
               });
-    
             });
           });
         });
