@@ -53,9 +53,25 @@ app.use(function(req, res, next) {
 
 
 app.get('/items/login', function(req, res) {
-  // Add your code here
+  const { email, password} = req.body
 
-  res.json({success: 'get call succeed!', url: req.url});
+  User.findOne({email: email}, (err, user) => {
+      if(user){
+              bcrypt.compare(password, user.password, function(err, result) {
+                if (result) {
+                  res.send({message: "Login Successfull", user: user})
+                }
+                // if passwords do not match
+                else {
+                  res.send({ message: "Email or Password Incorrect"})
+                }
+              });
+      } else {
+          res.send({message: "Please register!!"})
+      }
+  })
+
+  // res.json({success: 'get call succeed!', url: req.url});
 });
 
 
@@ -79,8 +95,6 @@ app.post('/items/register', function(req, res) {
                         bcrypt.hash(state, salt, function(err, statehash) {
                           bcrypt.genSalt(saltRounds, function(err, salt) {
                             bcrypt.hash(zip_code, salt, function(err, zhash) {
-                              bcrypt.genSalt(saltRounds, function(err, salt) {
-                                bcrypt.hash(email, salt, function(err, emailhash) {
                                   bcrypt.genSalt(saltRounds, function(err, salt) {
                                     bcrypt.hash(phone, salt, function(err, phash) {
                                       bcrypt.genSalt(saltRounds, function(err, salt) {
@@ -92,7 +106,7 @@ app.post('/items/register', function(req, res) {
                                             city: chash,
                                             state: statehash,
                                             zip_code: zhash,
-                                            email: emailhash,
+                                            email: email,
                                             phone: phash,
                                             password: hash,
                                             role: "user"
@@ -119,8 +133,6 @@ app.post('/items/register', function(req, res) {
                 });
               });
             });
-          });
-        });
       });
     }
     else {
