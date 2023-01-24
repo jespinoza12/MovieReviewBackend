@@ -95,10 +95,10 @@ app.post('/items/register', function(req, res) {
                         bcrypt.hash(state, salt, function(err, statehash) {
                           bcrypt.genSalt(saltRounds, function(err, salt) {
                             bcrypt.hash(zip_code, salt, function(err, zhash) {
-                                  bcrypt.genSalt(saltRounds, function(err, salt) {
-                                    bcrypt.hash(phone, salt, function(err, phash) {
-                                      bcrypt.genSalt(saltRounds, function(err, salt) {
-                                        bcrypt.hash(password, salt, function(err, hash) {
+                                bcrypt.genSalt(saltRounds, function(err, salt) {
+                                  bcrypt.hash(phone, salt, function(err, phash) {
+                                    bcrypt.genSalt(saltRounds, function(err, salt) {
+                                      bcrypt.hash(password, salt, function(err, hash) {
                                           const user = new User({
                                             fname: fnhash,
                                             lname: lnhash,
