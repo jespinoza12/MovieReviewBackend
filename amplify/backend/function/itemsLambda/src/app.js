@@ -84,61 +84,29 @@ app.post('/items/register', function(req, res) {
       res.send({message: 'User already exists'})
     } else if (!user){
       bcrypt.genSalt(saltRounds, function(err, salt) {
-        bcrypt.hash(fname, salt, function(err, fnhash) {
-          bcrypt.genSalt(saltRounds, function(err, salt) {
-            bcrypt.hash(lname, salt, function(err, lnhash) {
-              bcrypt.genSalt(saltRounds, function(err, salt) {
-                bcrypt.hash(steet, salt, function(err, streethash) {
-                  bcrypt.genSalt(saltRounds, function(err, salt) {
-                    bcrypt.hash(city, salt, function(err, chash) {
-                      bcrypt.genSalt(saltRounds, function(err, salt) {
-                        bcrypt.hash(state, salt, function(err, statehash) {
-                          bcrypt.genSalt(saltRounds, function(err, salt) {
-                            bcrypt.hash(zip_code, salt, function(err, zhash) {
-                                bcrypt.genSalt(saltRounds, function(err, salt) {
-                                  bcrypt.hash(phone, salt, function(err, phash) {
-                                    bcrypt.genSalt(saltRounds, function(err, salt) {
-                                      bcrypt.hash(password, salt, function(err, hash) {
-                                          const user = new User({
-                                            fname: fnhash,
-                                            lname: lnhash,
-                                            steet: streethash,
-                                            city: chash,
-                                            state: statehash,
-                                            zip_code: zhash,
-                                            email: email,
-                                            phone: phash,
-                                            password: hash,
-                                            role: "user"
-                                          });
-                                          user.save(err => {
-                                            if(err) {
-                                                res.send(err)
-                                            } else {
-                                                res.send( { message: "Successfully Registered, Please Login" } )
-                                            }
-                                          });
-                                        });
-                                      });
-                                    });
-                                  });
-                                });
-                              });
-                            });
-                          });
-                        });
-                      });
-                    });
-                  });
-                });
-              });
+        bcrypt.hash(password, salt, function(err, hash) {
+            const user = new User({
+              fname: fname,
+              lname: lname,
+              steet: steet,
+              city: city,
+              state: state,
+              zip_code: zip_code,
+              email: email,
+              phone: phone,
+              password: hash,
+              role: "user"
             });
-      });
-    }
-    else {
-      res.send({message: 'Oopsie something happened thats not supposed to'})
-    }
-  });
+            user.save(err => {
+              if(err) {
+                  res.send(err)
+              } else {
+                  res.send( { message: "Successfully Registered, Please Login" } )
+              }
+            });
+          });
+        });                         
+    }});
 });
 
 app.put('/items', function(req, res) {
