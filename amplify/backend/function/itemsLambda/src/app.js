@@ -1,11 +1,3 @@
-/*
-Copyright 2017 - 2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance with the License. A copy of the License is located at
-    http://aws.amazon.com/apache2.0/
-or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and limitations under the License.
-*/
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
@@ -13,6 +5,7 @@ const cors = require('cors');
 const port = 9292;
 const bcrypt = require('bcryptjs');
 const saltRounds = 10;
+const jwt = require('jsonwebtoken');
 
 
 const awsServerlessExpressMiddleware = require('aws-serverless-express/middleware')
@@ -23,7 +16,7 @@ mongoose.connect(process.env.MONGO).then(()=>{console.log('DB Connected')})
 const userSchema = new mongoose.Schema({
   fname: String,
   lname: String,
-  steet: String,
+  street: String,
   city: String,
   state: String,
   zip_code: String,
@@ -32,6 +25,8 @@ const userSchema = new mongoose.Schema({
   password: String,
   role: String
 });
+
+
 
 
 const User  = mongoose.model('User', userSchema);
@@ -48,37 +43,70 @@ app.use(awsServerlessExpressMiddleware.eventContext())
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*")
   res.header("Access-Control-Allow-Headers", "*")
+  res.header("Access-Control-Allow-Headers", "Authorization")
+
   next()
 });
 
+app.get('/items/user', authenticateToken, (req, res) => {
+  // lookup user by id in decoded.user
+  User.findById(req.user._id, (err, user) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    if (!user) {
+      return res.status(404).send({ message: 'User not found' });
+    }
+    res.send({ user });
+  });
+});
 
-app.get('/items/login', function(req, res) {
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['Authorization']
+  const token = authHeader && authHeader.split(' ')[1]
+  if (!token) {
+    return res.status(401).send({ message: 'Unauthorized' });
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).send({ message: 'Token expired' });
+      }
+      return res.status(401).send({ message: 'Invalid token' });
+    }
+    req.user = decoded;
+    next();
+  });
+}
+
+app.post('/items/login', function(req, res, next) {
   const { email, password} = req.body
-
   User.findOne({email: email}, (err, user) => {
       if(user){
               bcrypt.compare(password, user.password, function(err, result) {
                 if (result) {
-                  res.send({message: "Login Successfull", user: user})
+                  //create a JWT token
+                  const token = jwt.sign({ user }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+                  res.send({message: "Login Successfull", user: user, token: token});
                 }
                 // if passwords do not match
                 else {
                   res.send({ message: "Email or Password Incorrect"})
                 }
               });
-      } else {
-          res.send({message: "Please register!!"})
+      } else if (!user){
+          res.status(404).send({ message: "User not found"})
       }
   })
-
-  // res.json({success: 'get call succeed!', url: req.url});
 });
+
+
 
 
 
 app.post('/items/register', function(req, res) {
   // Add your code here
-  const {fname, lname, steet, city, state, zip_code, email, phone, password} = req.body;
+  const {fname, lname, street, city, state, zip_code, email, phone, password} = req.body;
   User.findOne({email: email}, (err, user) => {
     if (user) {
       res.send({message: 'User already exists'})
@@ -88,7 +116,7 @@ app.post('/items/register', function(req, res) {
             const user = new User({
               fname: fname,
               lname: lname,
-              steet: steet,
+              street: street,
               city: city,
               state: state,
               zip_code: zip_code,
