@@ -26,10 +26,19 @@ const userSchema = new mongoose.Schema({
   role: String
 });
 
+const reviewSchema = new mongoose.Schema({
+  fname: String,
+  lName: String,
+  userID: String,
+  movieID: String,
+  userRev: String
+});
+
 
 
 
 const User  = mongoose.model('User', userSchema);
+const Review = mongoose.model('Review', reviewSchema);
 
 // declare a new express app
 const app = express()
@@ -100,7 +109,25 @@ app.post('/items/login', function(req, res, next) {
   })
 });
 
-
+app.post('/items/reviews', function(req, res) {
+  const {userID, movieID} = req.body;
+  Review.findOne({userID: userID, movieID: movieID}, (err, user) => {
+    if (review) {
+      res.send({message: 'User already exists'})
+    } else if (!review){
+      const review = new Review({
+        userID: String,
+        movieID: String
+        });
+        review.save(err => {
+          if(err) {
+            res.send(err)
+          } else {
+            res.send( { message: "Successfully Registered, Please Login" } )
+          }
+        });                       
+    }});
+});
 
 
 
