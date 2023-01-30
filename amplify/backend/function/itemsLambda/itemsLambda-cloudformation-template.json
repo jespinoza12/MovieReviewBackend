@@ -147,12 +147,14 @@
             {
               "Effect": "Allow",
               "Action": [
-                ["secretsmanger:GetSecretValue"]
+                [
+                  "secretsmanger:GetSecretValue"
+                ]
               ],
               "Resource": {
                 "Fn::Sub": [
-                    "arn:aws:secretsmanager:us-west-2:715609144461:secret:dev/JWT_SECRET-QiMqt1",
-                    "arn:aws:secretsmanager:us-west-2:715609144461:secret:dev/MONGO-VTorZ0",
+                  "arn:aws:secretsmanager:us-west-2:715609144461:secret:dev/JWT_SECRET-QiMqt1",
+                  "arn:aws:secretsmanager:us-west-2:715609144461:secret:dev/MONGO-VTorZ0",
                   {
                     "region": {
                       "Ref": "AWS::Region"
