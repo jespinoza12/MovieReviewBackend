@@ -7,7 +7,6 @@ const bcrypt = require("bcryptjs");
 const saltRounds = 10;
 const jwt = require("jsonwebtoken");
 const AWS = require('aws-sdk');
-const secretsManager = new AWS.SecretsManager();
 
 const awsServerlessExpressMiddleware = require("aws-serverless-express/middleware");
 require("dotenv").config();
