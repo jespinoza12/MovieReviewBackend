@@ -6,13 +6,27 @@ const port = 9292;
 const bcrypt = require("bcryptjs");
 const saltRounds = 10;
 const jwt = require("jsonwebtoken");
+const AWS = require('aws-sdk');
+const secretsManager = new AWS.SecretsManager();
 
 const awsServerlessExpressMiddleware = require("aws-serverless-express/middleware");
 require("dotenv").config();
 
-mongoose.connect(process.env.MONGO).then(() => {
-  console.log("DB Connected");
-});
+
+
+async function connectToDb() {
+  const secretData = await secretsManager
+    .getSecretValue({ SecretId: 'dev/MONGO' })
+    .promise();
+  const secretValues = JSON.parse(secretData.SecretString);
+  const mongoUri = secretValues.MONGO;
+  
+  return mongoose.connect(mongoUri || process.env.MONGO, { useNewUrlParser: true }).then(() => {
+    console.log("DB Connected");
+  });
+}
+
+connectToDb();
 
 const userSchema = new mongoose.Schema({
   fname: String,
@@ -49,7 +63,7 @@ app.use(function (req, res, next) {
   next();
 });
 
-const authenticate = (req, res, next) => {
+const authenticate = async (req, res, next) => {
   const authHeader =
     req.headers["authorization"] || req.headers["Authorization"];
   if (!authHeader) {
@@ -62,7 +76,13 @@ const authenticate = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const secretData = await secretsManager
+      .getSecretValue({ SecretId: 'dev/JWT_SECRET' })
+      .promise();
+    const secretValues = JSON.parse(secretData.SecretString);
+    const jwtSecret = secretValues.JWT_SECRET;
+
+    const decoded = jwt.verify(token, jwtSecret || process.env.JWT_SECRET);
     req.user = decoded;
     next();
   } catch (err) {
@@ -74,25 +94,69 @@ app.get("/items/user", authenticate, (req, res) => {
   res.send({ user: req.user });
 });
 
+
+app.get("/items/admin/allUsers", authenticate, async (req, res) => {
+  try {
+    const user = req.user;
+    if (user.role !== "Admin") {
+      return res.status(401).json({
+        message: "Unauthorized access",
+      });
+    }
+    const allUsers = await User.find({});
+    return res.status(200).json({
+      users: allUsers,
+      message: `Welcome Admin ${user.lname}`
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "An error occurred while fetching the users",
+    });
+  }
+});
+
+
+async function authenticateUser(email, password) {
+  return new Promise((resolve, reject) => {
+    User.findOne({ email: email }, async (err, user) => {
+      if (user) {
+        bcrypt.compare(password, user.password, async function (err, result) {
+          if (result) {
+            const secretData = await secretsManager
+              .getSecretValue({ SecretId: 'dev/JWT_SECRET' })
+              .promise();
+            const secretValues = JSON.parse(secretData.SecretString);
+            const jwtSecret = secretValues.JWT_SECRET;
+
+            //create a JWT token
+            const token = jwt.sign({ user }, jwtSecret || process.env.JWT_SECRET, {
+              expiresIn: "1h",
+            });
+            resolve({
+              message: "Login Successfull",
+              user: user,
+              token: token
+            });
+          } else {
+            reject({ message: "Email or Password Incorrect" });
+          }
+        });
+      } else if (!user) {
+        reject({ message: "User not found" });
+      }
+    });
+  });
+}
+
 app.post("/items/login", function (req, res, next) {
   const { email, password } = req.body;
-  User.findOne({ email: email }, (err, user) => {
-    if (user) {
-      bcrypt.compare(password, user.password, function (err, result) {
-        if (result) {
-          //create a JWT token
-          const token = jwt.sign({ user }, process.env.JWT_SECRET, {
-            expiresIn: "1h",
-          });
-          res.send({ message: "Login Successfull", user: user, token: token });
-        } else {
-          res.send({ message: "Email or Password Incorrect" });
-        }
-      });
-    } else if (!user) {
-      res.status(404).send({ message: "User not found" });
-    }
-  });
+  authenticateUser(email, password)
+    .then(result => {
+      res.send(result);
+    })
+    .catch(error => {
+      res.status(404).send(error);
+    });
 });
 
 app.post("/items/register", function (req, res) {
@@ -137,11 +201,6 @@ app.post("/items/register", function (req, res) {
       });
     }
   });
-});
-
-app.put("/items", function (req, res) {
-  // Add your code here
-  res.json({ success: "put call succeed!", url: req.url, body: req.body });
 });
 
 app.delete("/items/deleteUser", function (req, res) {

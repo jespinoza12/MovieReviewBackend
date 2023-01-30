@@ -15,6 +15,10 @@
     },
     "s3Key": {
       "Type": "String"
+    },
+    "MyEnvVariableKey": {
+      "Type": "String",
+      "Default": "my-enviroment-variable"
     }
   },
   "Conditions": {
@@ -69,6 +73,9 @@
             },
             "REGION": {
               "Ref": "AWS::Region"
+            },
+            "My_ENV_VAR": {
+              "Ref": "MyEnvVariableKey"
             }
           }
         },
@@ -140,13 +147,12 @@
             {
               "Effect": "Allow",
               "Action": [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
+                ["secretsmanger:GetSecretValue"]
               ],
               "Resource": {
                 "Fn::Sub": [
-                  "arn:aws:logs:${region}:${account}:log-group:/aws/lambda/${lambda}:log-stream:*",
+                  "arn:aws:secretsmanager:us-west-2:715609144461:secret:dev/MONGO-VTorZ0",
+                  "arn:aws:secretsmanager:us-west-2:715609144461:secret:dev/JWT_SECRET-QiMqt1",
                   {
                     "region": {
                       "Ref": "AWS::Region"
