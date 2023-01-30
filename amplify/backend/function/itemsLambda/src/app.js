@@ -10,13 +10,9 @@ const jwt = require("jsonwebtoken");
 const awsServerlessExpressMiddleware = require("aws-serverless-express/middleware");
 require("dotenv").config();
 
-mongoose
-  .connect(
-    "mongodb+srv://Frosty:1234@reviewit.dfkmyot.mongodb.net/?retryWrites=true&w=majority"
-  )
-  .then(() => {
-    console.log("DB Connected");
-  });
+mongoose.connect(process.env.MONGO).then(() => {
+  console.log("DB Connected");
+});
 
 const userSchema = new mongoose.Schema({
   fname: String,
@@ -39,11 +35,13 @@ app.use(express.json({ limit: "100mb", extended: true }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
 app.use(bodyParser.json());
 app.use(awsServerlessExpressMiddleware.eventContext());
-app.use(cors({
-  origin: 'http://localhost:3000',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Authorization', 'Content-Type']
-}));
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Authorization", "Content-Type"],
+  })
+);
 // Enable CORS for all methods
 app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -52,31 +50,30 @@ app.use(function (req, res, next) {
 });
 
 const authenticate = (req, res, next) => {
-  const authHeader = req.headers["authorization"] || req.headers["Authorization"];
-  console.log(authHeader)
+  const authHeader =
+    req.headers["authorization"] || req.headers["Authorization"];
   if (!authHeader) {
-  return res.send({ message: "Unauthorized: No token provided" });
+    return res.send({ message: "Unauthorized: No token provided" });
   }
-  
+
   const token = authHeader.split(" ")[1];
   if (!token) {
-  return res.send({ message: "Unauthorized: Invalid token" });
+    return res.send({ message: "Unauthorized: Invalid token" });
   }
-  
+
   try {
-  const decoded = jwt.verify(token, "I_Like_Peanut_Bu77er");
-  req.user = decoded;
-  next();
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
   } catch (err) {
-  return res.send({ message: "Unauthorized: Invalid token" });
+    return res.send({ message: "Unauthorized: Invalid token" });
   }
-  };
-  
-  
-  app.get("/items/user", authenticate, (req, res) => {
+};
+
+app.get("/items/user", authenticate, (req, res) => {
   res.send({ user: req.user });
-  });
-  
+});
+
 app.post("/items/login", function (req, res, next) {
   const { email, password } = req.body;
   User.findOne({ email: email }, (err, user) => {
@@ -84,7 +81,7 @@ app.post("/items/login", function (req, res, next) {
       bcrypt.compare(password, user.password, function (err, result) {
         if (result) {
           //create a JWT token
-          const token = jwt.sign({ user }, "I_Like_Peanut_Bu77er", {
+          const token = jwt.sign({ user }, process.env.JWT_SECRET, {
             expiresIn: "1h",
           });
           res.send({ message: "Login Successfull", user: user, token: token });
