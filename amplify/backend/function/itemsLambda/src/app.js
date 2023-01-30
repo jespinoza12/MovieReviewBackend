@@ -40,11 +40,7 @@ app.use(express.urlencoded({ limit: "100mb", extended: true }));
 app.use(bodyParser.json());
 app.use(awsServerlessExpressMiddleware.eventContext());
 app.use(
-  cors({
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Authorization", "Content-Type"],
-  })
+  cors({})
 );
 // Enable CORS for all methods
 app.use(function (req, res, next) {
