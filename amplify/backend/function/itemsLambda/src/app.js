@@ -38,9 +38,6 @@ const reviewSchema = new mongoose.Schema({
   userRev: String
 });
 
-
-
-
 const User  = mongoose.model('User', userSchema);
 const Review = mongoose.model('Review', reviewSchema);
 
@@ -86,24 +83,25 @@ app.get("/items/user", authenticate, (req, res) => {
 });
 
 app.post('/items/reviews', function(req, res) {
-  const {userID, movieID} = req.body;
-  Review.findOne({userID: userID, movieID: movieID}, (err, review) => {
+  const {userID, movieID, userRev} = req.body;
+  Review.findOne({userID: userID, movieID: movieID, userRev: userRev}, (err, review) => {
     if (review) {
       res.send({message: 'Review already exists'})
     } else if (!review){
       const review = new Review({
         userID: String,
-        movieID: String
-        });
-        review.save(err => {
-          if(err) {
-            res.send(err)
-          } else {
-            res.send( { message: "Successfully Registered, Please Login" } )
-          }
-        });    
-      }});                   
-    });
+        movieID: String,
+        userRev: String
+      });
+      review.save(err => {
+        if(err) {
+          res.send(err)
+        } else {
+          res.send( { message: "Successfully Registered, Please Login" } )
+        }
+      });    
+  }});                   
+});
 
 app.get("/items/admin/allUsers", authenticate, async (req, res) => {
   try {
