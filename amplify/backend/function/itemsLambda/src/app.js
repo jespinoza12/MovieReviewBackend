@@ -38,8 +38,15 @@ const reviewSchema = new mongoose.Schema({
   userRev: String
 });
 
+const starsSchema = new mongoose.Schema({
+  userID: String,
+  movieID: String,
+  userRev: String
+});
+
 const User  = mongoose.model('User', userSchema);
 const Review = mongoose.model('Review', reviewSchema);
+const Stars = mongoose.model('Stars', starsSchema);
 
 // declare a new express app
 const app = express();
@@ -97,7 +104,28 @@ app.post('/items/reviews', function(req, res) {
         if(err) {
           res.send(err)
         } else {
-          res.send( { message: "Successfully Registered, Please Login" } )
+          res.send( { message: "The Review was Succesfully Uploaded" } )
+        }
+      });    
+  }});                   
+});
+
+app.post('/items/stars', function(req, res) {
+  const {userID, movieID, userRev} = req.body;
+  Review.findOne({userID: userID, movieID: movieID, userRev: userRev}, (err, review) => {
+    if (review) {
+      res.send({message: 'Review already exists'})
+    } else if (!review){
+      const review = new Review({
+        userID: String,
+        movieID: String,
+        userRev: String
+      });
+      review.save(err => {
+        if(err) {
+          res.send(err)
+        } else {
+          res.send( { message: "The Review was Succesfully Uploaded" } )
         }
       });    
   }});                   
