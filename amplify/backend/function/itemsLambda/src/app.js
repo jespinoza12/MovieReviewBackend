@@ -6,12 +6,10 @@ const port = 9292;
 const bcrypt = require("bcryptjs");
 const saltRounds = 10;
 const jwt = require("jsonwebtoken");
-const AWS = require('aws-sdk');
+const AWS = require("aws-sdk");
 
 const awsServerlessExpressMiddleware = require("aws-serverless-express/middleware");
 require("dotenv").config();
-
-
 
 mongoose.connect(process.env.MONGO).then(() => {
   console.log("DB Connected");
@@ -30,7 +28,23 @@ const userSchema = new mongoose.Schema({
   role: String,
 });
 
+const reviewSchema = new mongoose.Schema({
+  fname: String,
+  lName: String,
+  userID: String,
+  movieID: String,
+  userRev: String,
+});
+
+const starsSchema = new mongoose.Schema({
+  userID: String,
+  movieID: String,
+  userRev: String,
+});
+
 const User = mongoose.model("User", userSchema);
+const Review = mongoose.model("Review", reviewSchema);
+const Stars = mongoose.model("Stars", starsSchema);
 
 // declare a new express app
 const app = express();
@@ -38,9 +52,7 @@ app.use(express.json({ limit: "100mb", extended: true }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
 app.use(bodyParser.json());
 app.use(awsServerlessExpressMiddleware.eventContext());
-app.use(
-  cors({})
-);
+app.use(cors({}));
 // Enable CORS for all methods
 app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -73,6 +85,63 @@ app.get("/items/user", authenticate, (req, res) => {
   res.send({ user: req.user });
 });
 
+app.post("/items/reviews", function (req, res) {
+  const { userID, movieID, userRev, fname, lname } = req.body;
+  Review.findOne({ userID: userID, movieID: movieID }, (err, review) => {
+    if (review) {
+      res.send({ message: "Review already exists" });
+    } else if (!review) {
+      const review = new Review({
+        fname: fname,
+        lName: lname,
+        userID: userID,
+        movieID: movieID,
+        userRev: userRev,
+      });
+      review.save((err) => {
+        if (err) {
+          res.send(err);
+        } else {
+          res.send({ message: "The Review was Succesfully Uploaded" });
+        }
+      });
+    }
+  });
+});
+
+app.post("/items/stars", function (req, res) {
+  const { userID, movieID, userRev } = req.body;
+  Stars.findOne({ userID: userID, movieID: movieID }, (err, star) => {
+    if (star) {
+      Stars.findOneAndUpdate(
+        { userID: userID, movieID: movieID },
+        { userRev: userRev },
+        { new: true },
+        (err, updatedStar) => {
+          if (err) {
+            res.send(err);
+          } else {
+            res.send({ message: "The Review was Successfully Updated" });
+            updatedStar.save();
+          }
+        }
+      );
+    } else if (!star) {
+      const star = new Stars({
+        userID: userID,
+        movieID: movieID,
+        userRev: userRev,
+      });
+      star.save((err) => {
+        if (err) {
+          res.send(err);
+        } else {
+          res.send({ message: "The Review was Succesfully Uploaded" });
+        }
+      });
+    }
+  });
+});
 
 app.get("/items/admin/allUsers", authenticate, async (req, res) => {
   try {
@@ -85,7 +154,7 @@ app.get("/items/admin/allUsers", authenticate, async (req, res) => {
     const allUsers = await User.find({});
     return res.status(200).json({
       users: allUsers,
-      message: `Welcome Admin ${user.lname}`
+      message: `Welcome Admin ${user.lname}`,
     });
   } catch (error) {
     return res.status(500).json({
