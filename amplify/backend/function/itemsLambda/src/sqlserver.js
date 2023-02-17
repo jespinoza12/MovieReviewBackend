@@ -16,6 +16,16 @@ const config = {
   database: "reviewit",
 };
 
+const pool = new sql.ConnectionPool(config);
+
+pool.connect((err) => {
+  if (err) {
+    console.error("Error connecting to database:", err);
+  } else {
+    console.log("Connected to database");
+  }
+});
+
 // declare a new express app
 const app = express();
 app.use(express.json({ limit: "100mb", extended: true }));
@@ -107,7 +117,6 @@ app.post("/items/reviews", function (req, res) {
   });
 });
 
-
 app.post("/items/stars", function (req, res) {
   const { userID, movieID, userRev } = req.body;
 
@@ -160,7 +169,6 @@ app.post("/items/stars", function (req, res) {
   });
 });
 
-
 app.get("/items/admin/allUsers", authenticate, async (req, res) => {
   try {
     const user = req.user;
@@ -187,29 +195,35 @@ app.get("/items/admin/allUsers", authenticate, async (req, res) => {
   }
 });
 
-app.post("/items/login", function (req, res, next) {
+app.post("/items/login", async (req, res, next) => {
   const { email, password } = req.body;
-  const query = `SELECT * FROM users WHERE email = ${email}`;
-  connection.query(query, [email], function (error, results, fields) {
-    if (error) {
-      console.error(error);
-      res.status(500).send({ message: "Internal server error" });
-    } else if (results.length > 0) {
-      const user = results[0];
-      bcrypt.compare(password, user.password, function (err, result) {
-        if (result) {
-          const token = jwt.sign({ user }, process.env.JWT_SECRET, {
-            expiresIn: "1h",
-          });
-          res.send({ message: "Login Successfull", user: user, token: token });
-        } else {
-          res.send({ message: "Email or Password Incorrect" });
-        }
-      });
-    } else {
-      res.status(404).send({ message: "User not found" });
+
+  try {
+    const result = await pool
+      .request()
+      .input("email", sql.NVarChar(255), email)
+      .query("SELECT * FROM users WHERE email = @email");
+
+    const user = result.recordset[0];
+
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
     }
-  });
+
+    bcrypt.compare(password, user.password, (err, result) => {
+      if (result) {
+        const token = jwt.sign({ user }, process.env.JWT_SECRET, {
+          expiresIn: "1h",
+        });
+        res.send({ message: "Login Successful", user: user, token: token });
+      } else {
+        res.send({ message: "Email or Password Incorrect" });
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "An error occurred while logging in" });
+  }
 });
 
 app.post("/items/register", (req, res) => {
